@@ -4,8 +4,12 @@ from typing import Iterable
 
 from dotenv import load_dotenv
 from openai import NotGiven, OpenAI
+from openai.types.responses.function_tool_param import FunctionToolParam
 from openai.types.responses.response_create_params import ToolChoice
+from openai.types.responses.response_function_tool_call import ResponseFunctionToolCall
 from openai.types.responses.response_input_param import ResponseInputParam
+from openai.types.responses.response_output_message import ResponseOutputMessage
+from openai.types.responses.response_output_text import ResponseOutputText
 from openai.types.responses.tool_param import ToolParam
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from termcolor import colored
@@ -62,7 +66,7 @@ def pretty_print_conversation(messages):
             print(colored(f"function {message["name"]}: {message["content"]}\n", role_to_color[message["role"]]))
 
 
-tools = [get_pokemon_tool_schema]
+tools = [FunctionToolParam(**get_pokemon_tool_schema)]
 
 system_message = {
     "role": "system",
@@ -74,6 +78,9 @@ messages.append(system_message)
 print(f"💡 {colored("I'm a smart cookie. As me anything...", "green")}")
 while True:
     user_input = input(f"🐳 {colored("How can I help you?", "green")} ")
+    if user_input == "exit":
+        print(f"👋🏼 {colored("Bye bye...", "magenta")}")
+        exit()
     user_message = {
         "role": "user",
         "content": user_input,
@@ -89,25 +96,34 @@ while True:
     if isinstance(response, Exception):
         exit()
 
-    tool_call = response.output[0]
-    if tool_call.name == "get_pokemon":
-        print(tool_call)
-        args = json.loads(tool_call.arguments)
+    tool_call = []
+    for output in response.output:
+        if isinstance(output, ResponseFunctionToolCall):
+            tool_call.append(output)
+        elif isinstance(output, ResponseOutputMessage):
+            content = output.content[0]
+            if isinstance(content, ResponseOutputText):
+                print(content.text)
+            continue
 
-        results = get_pokemon(args["name"])
+    for call in tool_call:
+        if call.name == "get_pokemon":
+            args = json.loads(call.arguments)
 
-        messages.append(tool_call)
+            results = get_pokemon(args["name"])
 
-        messages.append({
-            "type": "function_call_output",
-            "call_id": tool_call.call_id,
-            "output": str(results)
-        })
+            messages.append(call)
 
-    response_2 = generate_response(
-        message=messages,
-        tools=tools,
-        tool_choice="auto",
-    )
+            messages.append({
+                "type": "function_call_output",
+                "call_id": call.call_id,
+                "output": str(results)
+            })
 
-    print(response_2.output_text)
+        response_2 = generate_response(
+            message=messages,
+            tools=tools,
+            tool_choice="auto",
+        )
+        if not isinstance(response_2, Exception):
+            print(response_2.output_text)
