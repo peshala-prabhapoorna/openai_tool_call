@@ -14,7 +14,7 @@ from openai.types.responses.tool_param import ToolParam
 from tenacity import retry, stop_after_attempt, wait_random_exponential
 from termcolor import colored
 
-from pokemon import get_pokemon, get_pokemon_tool_schema
+from pokemon import get_pokemon_abilities, get_pokemon_abilities_tool_schema
 
 
 GPT_MODEL = "gpt-4.1"
@@ -66,7 +66,7 @@ def pretty_print_conversation(messages):
             print(colored(f"function {message["name"]}: {message["content"]}\n", role_to_color[message["role"]]))
 
 
-tools = [FunctionToolParam(**get_pokemon_tool_schema)]
+tools = [FunctionToolParam(**get_pokemon_abilities_tool_schema)]
 
 system_message = {
     "role": "system",
@@ -110,7 +110,7 @@ while True:
         if call.name == "get_pokemon":
             args = json.loads(call.arguments)
 
-            results = get_pokemon(args["name"])
+            results = get_pokemon_abilities(args["name"])
 
             messages.append(call)
 

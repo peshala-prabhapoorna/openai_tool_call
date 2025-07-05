@@ -1,10 +1,10 @@
 import requests
 
 
-get_pokemon_tool_schema = {
+get_pokemon_abilities_tool_schema = {
     "type": "function",
-    "name": "get_pokemon",
-    "description": "Get information about a Pokemon with the given name",
+    "name": "get_pokemon_abilities",
+    "description": "Get information about the abilities of a Pokemon with the given name",
     "parameters": {
         "type": "object",
         "properties": {
@@ -21,6 +21,6 @@ get_pokemon_tool_schema = {
 }
 
 
-def get_pokemon(name: str):
+def get_pokemon_abilities(name: str):
     response = requests.get(f"https://pokeapi.co/api/v2/pokemon/{name.lower()}/")
     return response.json()["abilities"]
