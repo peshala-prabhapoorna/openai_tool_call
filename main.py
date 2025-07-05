@@ -107,7 +107,7 @@ while True:
             continue
 
     for call in tool_call:
-        if call.name == "get_pokemon":
+        if call.name == "get_pokemon_abilities":
             args = json.loads(call.arguments)
 
             results = get_pokemon_abilities(args["name"])
